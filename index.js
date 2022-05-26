@@ -15,6 +15,25 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.jor48.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
+const verifyJwt = (req, res, next) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+        res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_ACCESS_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        res.decoded = decoded;
+        next()
+    });
+
+}
+
+
+
 async function run() {
     try {
         await client.connect();
@@ -40,12 +59,13 @@ async function run() {
         })
 
         // ------------------------Get all order wih email-------------------------
-        app.get('/order/:email', async (req, res) => {
+        app.get('/order/:email', verifyJwt, async (req, res) => {
             const email = req.params.email
-            const filter = { email: email }
-            const result = await ordersCollection.find(filter).toArray()
+            const query = { email: email }
+            const result = await ordersCollection.find(query).toArray()
             res.send(result)
         })
+
         // ------------------------Get single order wih id-------------------------
         app.get('/orders/order/:id', async (req, res) => {
             const id = req.params.id;
@@ -86,6 +106,11 @@ async function run() {
         })
 
         // ------------------------Get all user data---------------------------------
+        app.get('/user', verifyJwt, async (req, res) => {
+            const result = await userCollection.find().toArray()
+            res.send(result)
+        })
+        // ------------------------Get single user data---------------------------------
         app.get('/user/:email', async (req, res) => {
             const email = req.params.email;
             const filter = { email: email }
@@ -99,7 +124,27 @@ async function run() {
             const result = await userCollection.insertOne(data)
             res.send(result)
         })
+        
 
+        // ------------------------Put user data-------------------------------------
+        app.put('/user/admin/:email', verifyJwt, async (req, res) => {
+            const email = req.params.email
+            const requester = eq.decoded.email
+            const requesterAccount = await userCollection.findOne({ email: requester })
+            if (requesterAccount.role === 'admin') {
+                const filter = { email: email }
+                const updateDoc = {
+                    $set: {
+                        role: 'admin'
+                    },
+                };
+                const result = await userCollection.updateOne(filter, updateDoc);
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: 'Forbidden access' })
+            }
+        })
         // ------------------------Put user data-------------------------------------
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email
