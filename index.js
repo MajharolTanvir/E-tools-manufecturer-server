@@ -58,6 +58,14 @@ async function run() {
             res.send(result)
         })
 
+        // -----------------------Post new tool data-------------------------------
+        app.post('/addTool', async (req, res) => {
+            const data = req.body
+            const result = await toolsCollection.insertOne(data)
+            res.send(result)
+        })
+
+
         // ------------------------Get all order wih email-------------------------
         app.get('/order/:email', verifyJwt, async (req, res) => {
             const email = req.params.email
@@ -124,7 +132,14 @@ async function run() {
             const result = await userCollection.insertOne(data)
             res.send(result)
         })
-        
+
+        // ------------------------Get admin----------------------------------------
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email
+            const user = await userCollection.findOne({ email: email })
+            const isAdmin = user.role === 'admin'
+            res.send({ admin: isAdmin })
+        })
 
         // ------------------------Put user data-------------------------------------
         app.put('/user/admin/:email', verifyJwt, async (req, res) => {
