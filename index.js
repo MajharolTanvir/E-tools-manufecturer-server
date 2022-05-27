@@ -170,7 +170,7 @@ async function run() {
         })
 
         // ------------------------Put user data-------------------------------------
-        app.put('/user/admin/:email', verifyJwt, verifyAdmin, async (req, res) => {
+        app.put('/user/admin/:email', verifyJwt,  async (req, res) => {
             const email = req.params.email
                 const filter = { email: email }
                 const updateDoc = {
@@ -181,6 +181,7 @@ async function run() {
                 const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result)
         })
+        
         // ------------------------Put user data-------------------------------------
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email
