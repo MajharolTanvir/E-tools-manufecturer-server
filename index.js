@@ -29,10 +29,7 @@ const verifyJwt = (req, res, next) => {
         res.decoded = decoded;
         next()
     });
-
 }
-
-
 
 async function run() {
     try {
@@ -43,6 +40,19 @@ async function run() {
         const userCollection = client.db('Manufacturer').collection('user')
         const reviewCollection = client.db('Manufacturer').collection('review')
         const paymentCollection = client.db('Manufacturer').collection('payments')
+
+
+        // --------------------------Verify admin---------------------------------
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email
+            const requesterAccount = await userCollection.findOne({ email: requester })
+            if (requesterAccount.role === 'admin') {
+                next()
+            }
+            else {
+                res.status(403).send({ message: 'Forbidden access' })
+            }
+        }
 
         // -----------------------Get all tools data-------------------------------
         app.get('/tools', async (req, res) => {
@@ -59,9 +69,17 @@ async function run() {
         })
 
         // -----------------------Post new tool data-------------------------------
-        app.post('/addTool', async (req, res) => {
+        app.post('/addTool', verifyJwt, async (req, res) => {
             const data = req.body
             const result = await toolsCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // ----------------------Delete tool--------------------------------------
+        app.delete('/deleteTool/:id', verifyJwt, async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: ObjectId(id) }
+            const result = await toolsCollection.deleteOne(filter)
             res.send(result)
         })
 
@@ -142,11 +160,8 @@ async function run() {
         })
 
         // ------------------------Put user data-------------------------------------
-        app.put('/user/admin/:email', verifyJwt, async (req, res) => {
+        app.put('/user/admin/:email', verifyJwt, verifyAdmin, async (req, res) => {
             const email = req.params.email
-            const requester = eq.decoded.email
-            const requesterAccount = await userCollection.findOne({ email: requester })
-            if (requesterAccount.role === 'admin') {
                 const filter = { email: email }
                 const updateDoc = {
                     $set: {
@@ -154,11 +169,7 @@ async function run() {
                     },
                 };
                 const result = await userCollection.updateOne(filter, updateDoc);
-                res.send(result)
-            }
-            else {
-                res.status(403).send({ message: 'Forbidden access' })
-            }
+            res.send(result)
         })
         // ------------------------Put user data-------------------------------------
         app.put('/user/:email', async (req, res) => {
