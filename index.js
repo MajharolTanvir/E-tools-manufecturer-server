@@ -31,6 +31,10 @@ const verifyJwt = (req, res, next) => {
     });
 }
 
+app.get('/', (req, res) => {
+    res.send('Hello e-tools manufacturing World!')
+})
+
 async function run() {
     try {
         await client.connect();
@@ -225,9 +229,6 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.get('/', (req, res) => {
-    res.send('Hello e-tools manufacturing World!')
-})
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
