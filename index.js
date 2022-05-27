@@ -85,6 +85,12 @@ async function run() {
 
 
         // ------------------------Get all order wih email-------------------------
+        app.get('/order', verifyJwt, async (req, res) => {
+            const result = await await ordersCollection.find().toArray()
+            res.send(result)
+        })
+
+        // ------------------------Get all order wih email-------------------------
         app.get('/order/:email', verifyJwt, async (req, res) => {
             const email = req.params.email
             const query = { email: email }
